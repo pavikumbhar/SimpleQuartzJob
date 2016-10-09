@@ -42,7 +42,14 @@
         class="com.pavikumbhar.javaheart.quartz.jdbc.PersistableCronTriggerFactoryBean">
         <!-- Reference to the job bean that will be triggered: -->
         <property name="jobDetail" ref="myJob" />
+        
+        <!-- Cron expression, usually comes from a property -->
         <property name="cronExpression" value="0/5 * * * * ?" />
+        
+         <!-- What to do if the job has missed its time
+             because the previous job was running for too long.
+             Usually, it's OK to do nothing, but Quartz has other strategies as well,
+             notably 'MISFIRE_INSTRUCTION_FIRE_ONCE_NOW' -->
         <property name="misfireInstruction"
             value="#{T(org.quartz.CronTrigger).MISFIRE_INSTRUCTION_DO_NOTHING}" />
     </bean>
@@ -55,15 +62,23 @@
         class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
  
         <property name="configLocation" value="classpath:quartz.properties" />
+        
+         <!-- Naturally, Quartz with the DB requires references to the data source and transaction manager beans -->
         <property name="dataSource" ref="dataSource" />
         <property name="transactionManager" ref="transactionManager" />
  
+         <!-- This name is persisted as SCHED_NAME in db. for local testing could change to unique name
+      to avoid collision with dev server -->
         <property name="schedulerName" value="quartzScheduler" />
+       
+        <!-- Will update database cron triggers to what is in this jobs file on each deploy.
+      Replaces all previous trigger and job data that was in the database. YMMV  -->
         <property name="overwriteExistingJobs" value="true" />
  
         <property name="autoStartup" value="true" />
         <property name="applicationContextSchedulerContextKey" value="applicationContext" />
  
+        <!-- reference to our 'autowiring job factory bean -->
         <property name="jobFactory" ref="quartzJobFactory" />
  
         <!-- NOTE: Must add both the jobDetail and trigger to the scheduler! -->
