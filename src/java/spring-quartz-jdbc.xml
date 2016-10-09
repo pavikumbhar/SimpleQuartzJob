@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:task="http://www.springframework.org/schema/task"
+    xmlns:util="http://www.springframework.org/schema/util" xmlns:context="http://www.springframework.org/schema/context"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+        http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd
+        http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task.xsd">
+ 
+    <context:annotation-config></context:annotation-config>
+    <context:component-scan base-package="com.pavikumbhar.javaheart.quartz"></context:component-scan>
+ 
+ 
+    <bean class="org.springframework.jdbc.datasource.DriverManagerDataSource"
+        id="dataSource">
+        <property value="com.mysql.jdbc.Driver" name="driverClassName" />
+        <property value="jdbc:mysql://localhost:3306/qurtzdemo" name="url" />
+        <property value="root" name="username" />
+        <property value="root" name="password" />
+    </bean>
+ 
+    <bean id="transactionManager"
+        class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+ 
+        <property name="dataSource" ref="dataSource" />
+ 
+    </bean>
+ 
+    <bean id="myJob"
+        class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+        <property name="jobClass" value="com.pavikumbhar.javaheart.quartz.jdbc.SimpleQuartzJob" />
+        <property name="jobDataAsMap">
+            <map>
+                <entry key="someParam" value="some value" />
+                <entry key="someParam2" value="1" />
+            </map>
+        </property>
+        <property name="durability" value="true" />
+    </bean>
+ 
+    <bean id="quartzTriggers"
+        class="com.pavikumbhar.javaheart.quartz.jdbc.PersistableCronTriggerFactoryBean">
+        <!-- Reference to the job bean that will be triggered: -->
+        <property name="jobDetail" ref="myJob" />
+        <property name="cronExpression" value="0/5 * * * * ?" />
+        <property name="misfireInstruction"
+            value="#{T(org.quartz.CronTrigger).MISFIRE_INSTRUCTION_DO_NOTHING}" />
+    </bean>
+ 
+    <bean id="quartzJobFactory" class="com.pavikumbhar.javaheart.quartz.jdbc.AutowiringSpringBeanJobFactory">
+        <property name="ignoredUnknownProperties" value="applicationContext" />
+    </bean>
+ 
+    <bean id="quartzScheduler"
+        class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+ 
+        <property name="configLocation" value="classpath:quartz.properties" />
+        <property name="dataSource" ref="dataSource" />
+        <property name="transactionManager" ref="transactionManager" />
+ 
+        <property name="schedulerName" value="quartzScheduler" />
+        <property name="overwriteExistingJobs" value="true" />
+ 
+        <property name="autoStartup" value="true" />
+        <property name="applicationContextSchedulerContextKey" value="applicationContext" />
+ 
+        <property name="jobFactory" ref="quartzJobFactory" />
+ 
+        <!-- NOTE: Must add both the jobDetail and trigger to the scheduler! -->
+        <property name="jobDetails">
+            <list>
+                <ref bean="myJob" />
+            </list>
+        </property>
+        <property name="triggers">
+            <list>
+                <ref bean="quartzTriggers" />
+            </list>
+        </property>
+    </bean>
+ 
+</beans>
